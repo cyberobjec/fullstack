@@ -1,0 +1,14 @@
+# Node dependencies (workspace-wide)
+**/node_modules/
+
+# Build outputs
+dist/
+**/dist/
+
+# Env / local overrides
+.env
+.env.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
