@@ -1,8 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { createPost, getAllPosts, updatePost, deletePost } from './postApi'
+import {
+  createPost,
+  getAllPosts,
+  updatePost,
+  deletePost,
+  searchPosts,
+} from './postApi'
 
 const PostsTable = () => {
   const [posts, setPosts] = useState([])
+  const [searchTerm, setSearchTerm] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [showDropdown, setShowDropdown] = useState(false)
   const [newPost, setNewPost] = useState({ title: '', content: '' })
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({ title: '', content: '' })
@@ -13,6 +22,34 @@ const PostsTable = () => {
       .then((response) => setPosts(response.data))
       .catch(() => setError('获取数据失败'))
   }, [])
+
+  const handleSearch = () => {
+    if (!searchTerm.trim()) {
+      setSearchResults([])
+      setShowDropdown(false)
+      return
+    }
+
+    searchPosts(searchTerm)
+      .then((response) => {
+        setSearchResults(response.data)
+        setShowDropdown(true)
+      })
+      .catch(() => setError('搜索失败'))
+  }
+
+  const selectPost = (post) => {
+    setShowDropdown(false)
+    setSearchTerm('')
+    const element = document.getElementById(`post-${post.id}`)
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      element.classList.add('ring-2', 'ring-blue-500')
+      setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-blue-500')
+      }, 2000)
+    }
+  }
 
   const handleCreatePost = () => {
     createPost(newPost)
@@ -56,7 +93,66 @@ const PostsTable = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">文章管理</h1>
+        {/* Header with Search */}
+        <div className="flex items-center justify-between mb-8 gap-6">
+          <h1 className="text-3xl font-bold text-gray-900">文章管理</h1>
+
+          {/* Search */}
+          <div className="flex-1 max-w-2xl relative">
+            <div className="flex ">
+              <input
+                type="text"
+                placeholder="搜索标题..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="flex-1 px-4 py-2 border border-gray-300 border-r-0 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none "
+              />
+              <button
+                onClick={handleSearch}
+                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              >
+                搜索
+              </button>
+            </div>
+
+            {/* Dropdown */}
+            {showDropdown && (
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-80 overflow-y-auto z-10">
+                {searchResults.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    未找到匹配的文章
+                  </div>
+                ) : (
+                  <div className="py-2">
+                    {searchResults.map((post) => (
+                      <div
+                        key={post.id}
+                        onClick={() => selectPost(post)}
+                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      >
+                        <div className="font-medium text-gray-900">
+                          {post.title}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate mt-1">
+                          {post.content}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="p-2 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowDropdown(false)}
+                    className="w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded transition-colors"
+                  >
+                    关闭
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Create Form */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
@@ -99,10 +195,10 @@ const PostsTable = () => {
             posts.map((post) => (
               <div
                 key={post.id}
-                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow"
+                id={`post-${post.id}`}
+                className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-all"
               >
                 {editingId === post.id ? (
-                  // Edit Mode
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <input
@@ -136,7 +232,6 @@ const PostsTable = () => {
                     />
                   </div>
                 ) : (
-                  // View Mode
                   <>
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-xl font-semibold text-gray-900">

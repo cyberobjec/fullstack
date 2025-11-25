@@ -12,6 +12,11 @@ export const getAllPosts = () => {
   return axios.get(API_URL)
 }
 
+// 搜索帖子 (按标题)
+export const searchPosts = (title) => {
+  return axios.get(`${API_URL}?title=${title}`)
+}
+
 // 获取单个帖子
 export const getPost = (id) => {
   return axios.get(`${API_URL}/${id}`)
